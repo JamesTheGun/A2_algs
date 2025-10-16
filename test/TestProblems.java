@@ -33,43 +33,115 @@ public class TestProblems {
         //              new ArrayList<>(Arrays.asList(4, 7, 8, 1))), 0.000001);
     }
 
-    public static void testTopologyDetection() {
-        System.out.println("Testing 'Topology Detection'");
+        public static void testTopologyDetection() {
+            System.out.println("=========================================");
+            System.out.println("Testing 'Topology Detection'");
+            System.out.println("=========================================");
 
-        // this is a subgraph of the first specsheet graph
-        List<Vertex<String>> vertices = new ArrayList<>();
-        for (int i = 0; i < 7; i++) {
-            vertices.add(new Vertex<>(i, "dr. a waz here"));
+            List<Vertex<String>> vertices = new ArrayList<>();
+            for (int i = 0; i < 7; i++) {
+                vertices.add(new Vertex<>(i, "dr. a waz here"));
+            }
+
+            // ------------------------------
+            // 1️⃣ Connected graph (has cycles)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> connectedGraph = new ArrayList<>(Arrays.asList(
+                    new Edge<>(vertices.get(0), vertices.get(1), 'G'),
+                    new Edge<>(vertices.get(0), vertices.get(2), 'U'),
+                    new Edge<>(vertices.get(1), vertices.get(4), 'R'),
+                    new Edge<>(vertices.get(1), vertices.get(2), 'K'),
+                    new Edge<>(vertices.get(1), vertices.get(3), 'E'),
+                    new Edge<>(vertices.get(2), vertices.get(5), 'Y'),
+                    new Edge<>(vertices.get(2), vertices.get(6), 'T'),
+                    new Edge<>(vertices.get(3), vertices.get(5), 'I'),
+                    new Edge<>(vertices.get(3), vertices.get(6), 'M'),
+                    new Edge<>(vertices.get(5), vertices.get(6), 'E'))
+            );
+            System.out.println("Test 1: Connected graph (with cycles)");
+            TopologyType result1 = Problems.topologyDetection(connectedGraph);
+            System.out.println("Expected: CONNECTED_GRAPH | Got: " + result1);
+            assert result1 == TopologyType.CONNECTED_GRAPH;
+            System.out.println("✅ Passed\n");
+
+            // ------------------------------
+            // 2️⃣ Disconnected forest (all trees)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> disconnectedTree = new ArrayList<>(Arrays.asList(
+                    new Edge<>(vertices.get(0), vertices.get(1), 'B'),
+                    new Edge<>(vertices.get(0), vertices.get(2), 'A'),
+                    new Edge<>(vertices.get(1), vertices.get(4), 'R'),
+                    new Edge<>(vertices.get(3), vertices.get(6), 'R'),
+                    new Edge<>(vertices.get(5), vertices.get(6), 'Y'))
+            );
+            System.out.println("Test 2: Disconnected forest (no cycles)");
+            TopologyType result2 = Problems.topologyDetection(disconnectedTree);
+            System.out.println("Expected: FOREST | Got: " + result2);
+            assert result2 == TopologyType.FOREST;
+            System.out.println("✅ Passed\n");
+
+            // ------------------------------
+            // 3️⃣ Connected tree (no cycles)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> connectedTree = new ArrayList<>(Arrays.asList(
+                    new Edge<>(vertices.get(0), vertices.get(1), 'A'),
+                    new Edge<>(vertices.get(1), vertices.get(2), 'B'),
+                    new Edge<>(vertices.get(2), vertices.get(3), 'C'),
+                    new Edge<>(vertices.get(3), vertices.get(4), 'D'))
+            );
+            System.out.println("Test 3: Connected tree (no cycles)");
+            TopologyType result3 = Problems.topologyDetection(connectedTree);
+            System.out.println("Expected: CONNECTED_TREE | Got: " + result3);
+            assert result3 == TopologyType.CONNECTED_TREE;
+            System.out.println("✅ Passed\n");
+
+            // ------------------------------
+            // 4️⃣ Disconnected graph (all components cyclic)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> disconnectedGraph = new ArrayList<>(Arrays.asList(
+                    new Edge<>(vertices.get(0), vertices.get(1), 'A'),
+                    new Edge<>(vertices.get(1), vertices.get(2), 'B'),
+                    new Edge<>(vertices.get(2), vertices.get(0), 'C'),
+                    new Edge<>(vertices.get(3), vertices.get(4), 'D'),
+                    new Edge<>(vertices.get(4), vertices.get(5), 'E'),
+                    new Edge<>(vertices.get(5), vertices.get(3), 'F'))
+            );
+            System.out.println("Test 4: Disconnected graph (all cyclic components)");
+            TopologyType result4 = Problems.topologyDetection(disconnectedGraph);
+            System.out.println("Expected: DISCONNECTED_GRAPH | Got: " + result4);
+            assert result4 == TopologyType.DISCONNECTED_GRAPH;
+            System.out.println("✅ Passed\n");
+
+            // ------------------------------
+            // 5️⃣ Hybrid graph (mix of trees and cyclic components)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> hybridGraph = new ArrayList<>(Arrays.asList(
+                    new Edge<>(vertices.get(0), vertices.get(1), 'A'),
+                    new Edge<>(vertices.get(1), vertices.get(2), 'B'),
+                    new Edge<>(vertices.get(2), vertices.get(0), 'C'), // cycle here
+                    new Edge<>(vertices.get(3), vertices.get(4), 'D')) // separate tree component
+            );
+            System.out.println("Test 5: Hybrid graph (some cycles, some trees)");
+            TopologyType result5 = Problems.topologyDetection(hybridGraph);
+            System.out.println("Expected: HYBRID | Got: " + result5);
+            assert result5 == TopologyType.HYBRID;
+            System.out.println("✅ Passed\n");
+
+            // ------------------------------
+            // 6️⃣ Empty graph (degenerate case)
+            // ------------------------------
+            ArrayList<Edge<String, Character>> emptyGraph = new ArrayList<>();
+            System.out.println("Test 6: Empty graph (degenerate)");
+            TopologyType result6 = Problems.topologyDetection(emptyGraph);
+            System.out.println("Expected: UNKNOWN | Got: " + result6);
+            assert result6 == TopologyType.UNKNOWN;
+            System.out.println("✅ Passed\n");
+
+            System.out.println("=========================================");
+            System.out.println("All topology detection tests completed successfully!");
+            System.out.println("=========================================");
         }
-        ArrayList<Edge<String, Character>> connectedGraph = new ArrayList<>(Arrays.asList(
-            new Edge<>(vertices.get(0), vertices.get(1), 'G'),
-            new Edge<>(vertices.get(0), vertices.get(2), 'U'),
-            new Edge<>(vertices.get(1), vertices.get(4), 'R'),
-            new Edge<>(vertices.get(1), vertices.get(2), 'K'),
-            new Edge<>(vertices.get(1), vertices.get(3), 'E'),
-            new Edge<>(vertices.get(2), vertices.get(5), 'Y'),
-            new Edge<>(vertices.get(2), vertices.get(6), 'T'),
-            new Edge<>(vertices.get(3), vertices.get(5), 'I'),
-            new Edge<>(vertices.get(3), vertices.get(6), 'M'),
-            new Edge<>(vertices.get(5), vertices.get(6), 'E'))
-        );
-        assert Problems.topologyDetection(connectedGraph) == TopologyType.CONNECTED_GRAPH;
 
-
-        // this is the last of the four specsheet examples
-        ArrayList<Edge<String, Character>> disconnectedTree = new ArrayList<>(Arrays.asList(
-            new Edge<>(vertices.get(0), vertices.get(1), 'B'),
-            new Edge<>(vertices.get(0), vertices.get(2), 'A'),
-            new Edge<>(vertices.get(1), vertices.get(4), 'R'),
-            new Edge<>(vertices.get(3), vertices.get(6), 'R'),
-            new Edge<>(vertices.get(5), vertices.get(6), 'Y'))
-        );
-        assert Problems.topologyDetection(disconnectedTree) == TopologyType.FOREST;
-
-        // you can use these ones if you prefer jUnit testing instead
-        // assertEquals(TopologyType.CONNECTED_GRAPH, Problems.topologyDetection(connectedGraph));
-        // assertEquals(TopologyType.FOREST, Problems.topologyDetection(disconnectedTree));
-    }
 
     public static void testRouteManagement() {
         System.out.println("Testing 'Route Management'");
@@ -192,16 +264,7 @@ public class TestProblems {
     public static void main(String[] args) {
 
         // Basic checking - make sure a command is provided
-        if (args.length == 0) {
-            usage();
-            return;
-        }
-
-        // Walk the commands and try to dispatch them
-        for (int i = 0; i < args.length; ++i) {
-            dispatch(args[i]);
-        }
-
+        dispatch("topo");
         // profit??
     }
 

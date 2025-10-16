@@ -209,14 +209,40 @@ public class OrderedMap<K extends Comparable<K>, V> implements MapInterface<K, V
         return null;
     }
 
-
-
-    /** Returns a SORTED list of keys in the range [lo, hi]*/
     public List<K> keysInRange(K lo, K hi) {
         ArrayList<K> result = new ArrayList<>();
-        // Implement me!
+        Node<K, V> currentNode = root;
+        while (currentNode != null) {
+            int compareLow = lo.compareTo(currentNode.getKey());
+            int compareHigh = hi.compareTo(currentNode.getKey());
+            if (compareLow > 0) {
+                currentNode = currentNode.getRight();
+            }
+            else if (compareHigh < 0) {
+                currentNode = currentNode.getLeft();
+            }
+            else {
+                result.add(currentNode.getKey());
+                Node<K, V> left = currentNode.getLeft();
+                while (left != null) {
+                    if (lo.compareTo(left.getKey()) <= 0 && hi.compareTo(left.getKey()) >= 0) {
+                        result.add(left.getKey());
+                    }
+                    left = left.getLeft();
+                }
+                Node<K, V> right = currentNode.getRight();
+                while (right != null) {
+                    if (lo.compareTo(right.getKey()) <= 0 && hi.compareTo(right.getKey()) >= 0) {
+                        result.add(right.getKey());
+                    }
+                    right = right.getRight();
+                }
+                break;
+            }
+        }
         return result;
     }
+
 
     /* All of the AVL Tree helpers are below; they are all private because a
        user of an ordered map doesn't need to know or care about them. */
@@ -266,7 +292,7 @@ public class OrderedMap<K extends Comparable<K>, V> implements MapInterface<K, V
      */
     private Node<K, V> rotateRight(Node<K, V> y) {
         Node<K, V> x = y.getLeft();
-        Node<K, V> heavySubtree = x.getRight(); // T2 above
+        Node<K, V> heavySubtree = x.getRight();
         x.setRight(y);
         y.setLeft(heavySubtree);
         updateHeight(y);
@@ -276,10 +302,13 @@ public class OrderedMap<K extends Comparable<K>, V> implements MapInterface<K, V
 
     /** The mirror of the rotateRight shown above */
     private Node<K, V> rotateLeft(Node<K, V> x) {
-        // uh oh... implement me!
-        // you can do it without AI, I believe in you
-        // make Barry proud
-        return x; // This will NOT work
+        Node<K, V> y = x.getRight();
+        Node<K, V> heavySubtree = y.getLeft();
+        y.setLeft(x);
+        x.setRight(heavySubtree);
+        updateHeight(x);
+        updateHeight(y);
+        return y;
     }
 
     /** Does the heavy lifting of the balancing */
@@ -350,7 +379,6 @@ public class OrderedMap<K extends Comparable<K>, V> implements MapInterface<K, V
             return new MutationResult<>(null, null);
         }
         int cmp = key.compareTo(node.getKey());
-
         if (cmp < 0) {
             // Recurse to the left subtree.
             MutationResult<Node<K, V>, V> leftResult = delete(node.getLeft(), key);

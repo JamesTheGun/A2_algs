@@ -22,8 +22,7 @@ public class Heap<K extends Comparable<K>, V> {
      * Constructs an empty heap with the default constructor
      */
     public Heap() {
-        this.data = new ArrayList<>();
-        // Implement me!
+        this.data = new ArrayList<>(32);
     }
 
     /**
@@ -126,7 +125,7 @@ public class Heap<K extends Comparable<K>, V> {
      */
     public void insert(K key, V value) {
         data.add(new Entry<>(key, value));
-        upHeap(data.size());
+        upHeap(data.size() -1);
     }
 
     /**
@@ -146,6 +145,7 @@ public class Heap<K extends Comparable<K>, V> {
      * Note: Return null if empty.
      */
     public Entry<K, V> removeMin() {
+        if (data.isEmpty()) {return null;}
         return data.removeFirst();
     }
 
@@ -158,7 +158,8 @@ public class Heap<K extends Comparable<K>, V> {
      * Note: Return null if empty
      */
     public Entry<K, V> peekMin() {
-        return null;
+        if (data.isEmpty()) {return null;}
+        return data.getFirst();
     }
 
     /**

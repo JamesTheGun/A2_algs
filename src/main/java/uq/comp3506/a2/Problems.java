@@ -8,6 +8,8 @@ import uq.comp3506.a2.structures.Vertex;
 import uq.comp3506.a2.structures.Entry;
 import uq.comp3506.a2.structures.TopologyType;
 import uq.comp3506.a2.structures.Tunnel;
+import uq.comp3506.a2.structures.UnorderedMap;
+import uq.comp3506.a2.structures.Heap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +38,99 @@ public class Problems {
      * Note: We promise that the input List will be an ArrayList.
      */
     public static double tunnelLighting(int tunnelLength, List<Integer> lightIntervals) {
-        return -1;
+        //put two dummy lights at the end... find biggest delta between consecutive... halve
+        lightIntervals.add(tunnelLength);
+        lightIntervals.add(0);
+        lightIntervals.sort(Integer::compareTo);
+        int largestDelta = 0;
+        for (int i = 0; i < lightIntervals.size() - 1; i++) {
+            int delta = lightIntervals.get(i + 1) - lightIntervals.get(i);
+            if (delta > largestDelta) {
+                largestDelta = delta;
+            }
+        }
+        return largestDelta/2.0;
     }
 
+    /**
+     * adjacency result containing adjacency list and all nodes which exist
+     */
+
+    private static record adjacencyResult(
+            UnorderedMap<Vertex, ArrayList<Vertex>> adjacencies,
+            ArrayList<Vertex> nodeList
+    ) {}
+
+    /**
+     * get adjacency rsult
+     */
+    private static <S, U> adjacencyResult getAdjacencyResult(List<Edge<S, U>> edgeList) {
+        UnorderedMap<Vertex, ArrayList<Vertex>> adjacencies = new UnorderedMap<>();
+        ArrayList<Vertex> nodeList = new ArrayList<>();
+
+        for (Edge<S, U> edge : edgeList) {
+            Vertex vertex1 = edge.getVertex1();
+            Vertex vertex2 = edge.getVertex2();
+
+            ArrayList<Vertex> list1 = adjacencies.get(vertex1);
+            if (list1 == null) {
+                list1 = new ArrayList<>();
+                adjacencies.put(vertex1, list1);
+                nodeList.add(vertex1);
+            }
+            list1.add(vertex2);
+
+            ArrayList<Vertex> list2 = adjacencies.get(vertex2);
+            if (list2 == null) {
+                list2 = new ArrayList<>();
+                adjacencies.put(vertex2, list2);
+                nodeList.add(vertex2);
+            }
+            list2.add(vertex1);
+        }
+        return new adjacencyResult(adjacencies, nodeList);
+    }
+
+    /**
+     * get unvisited
+     */
+    private static Vertex getUnVisited(ArrayList<Vertex> seenNodes,  ArrayList<Vertex> allNodes) {
+        for (Vertex node : allNodes) {
+            if (!seenNodes.contains(node)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * generate the thing we need to return
+     */
+    private static <S, U> TopologyType getReturn(boolean disconnected, boolean graph, boolean tree) {
+        if (!graph && !tree) {
+            return TopologyType.UNKNOWN;
+        }
+
+        if (!disconnected) {
+            if (tree) {
+                return TopologyType.CONNECTED_TREE;
+            } else {
+                return TopologyType.CONNECTED_GRAPH;
+            }
+        }
+
+        if (disconnected) {
+            if (tree && !graph) {
+                return TopologyType.FOREST;
+            } else if (graph && !tree) {
+                return TopologyType.DISCONNECTED_GRAPH;
+            } else if (graph && tree) {
+                return TopologyType.HYBRID;
+            }
+        }
+
+        return TopologyType.UNKNOWN; // Fallback safety
+    }
     /**
      * Compute the TopologyType of the graph as represented by the given edgeList.
      * @param edgeList The list of edges making up the graph G; each is of type
@@ -48,11 +140,108 @@ public class Problems {
      * Note: We promise not to provide any self loops, double edges, or isolated
      * vertices.
      */
-    public static <S, U> TopologyType topologyDetection(List<Edge<S, U>> edgeList) {
-        TopologyType dummy = TopologyType.UNKNOWN;
-        return dummy;
+
+        public static <S, U> TopologyType topologyDetection(List<Edge<S, U>> edgeList) {
+            if (edgeList.size() == 0) {
+                return TopologyType.UNKNOWN;
+            }
+            // depth first search problem because we are finding cycles
+            adjacencyResult adjRes = getAdjacencyResult(edgeList);
+            boolean disconect = false;
+            boolean graph = false;
+            boolean tree = false;
+
+            UnorderedMap<Vertex, ArrayList<Vertex>> adjacencies = adjRes.adjacencies;
+            ArrayList<Vertex> nodeList = adjRes.nodeList;
+
+            Vertex currentNode = null;
+            Vertex previousNode = null;
+            Vertex startingNode = nodeList.get(0);
+
+            ArrayList<Vertex> seenNodes = new ArrayList<>();
+            ArrayList<Vertex> explorationList = new ArrayList<>();
+
+            while (currentNode != startingNode) {
+                if (currentNode == null) {
+                    currentNode = startingNode;
+                }
+                previousNode = currentNode;
+                ArrayList<Vertex> adjacent = adjacencies.get(currentNode);
+                if (adjacent == null) break;
+                for (Vertex node : adjacent) {
+                    if (!seenNodes.contains(node)) {
+                        graph = true;
+                        seenNodes.add(node);
+                        currentNode = node;
+                        break;
+                    }
+                }
+                if (currentNode == previousNode) {
+                    if (!explorationList.isEmpty()) {
+                        currentNode = explorationList.remove(0);
+                    }
+                    if (currentNode != null && currentNode.equals(startingNode)) {
+                        Vertex node = getUnVisited(seenNodes, nodeList);
+                        if (!graph) {
+                            tree = true;
+                        }
+                        if (node == null) {
+                            return getReturn(disconect, graph, tree);
+                        }
+                        disconect = true;
+                        currentNode = node;
+                    }
+                }
+            }
+            return getReturn(disconect, graph, tree);
+        }
+
+    /**
+     *
+     */
+    private static record adjacentStation(
+            Vertex station,
+            int distance
+    ) {}
+
+    private static record adjacentStations(
+            UnorderedMap<Vertex, ArrayList<adjacentStation>> adjacencies
+    ) {
+        void addAdjacent(int distance, Vertex origin, Vertex adjacent) {
+            ArrayList<adjacentStation> list = adjacencies.get(origin);
+            if (list == null) {
+                list = new ArrayList<>();
+                adjacencies.put(origin, list);
+            }
+            list.add(new adjacentStation(adjacent, distance));
+        }
     }
- 
+
+    private static <S, U> adjacentStations getAdjacentStations(List<Edge<S, U>> edgeList) {
+        UnorderedMap<Vertex, ArrayList<adjacentStation>> adjacencies = new UnorderedMap<>();
+
+        for (Edge<S, U> edge : edgeList) {
+            Vertex v1 = edge.getVertex1();
+            Vertex v2 = edge.getVertex2();
+            int weight = (Integer) edge.getData();
+
+            ArrayList<adjacentStation> list1 = adjacencies.get(v1);
+            if (list1 == null) {
+                list1 = new ArrayList<>();
+                adjacencies.put(v1, list1);
+            }
+            list1.add(new adjacentStation(v2, weight));
+
+            ArrayList<adjacentStation> list2 = adjacencies.get(v2);
+            if (list2 == null) {
+                list2 = new ArrayList<>();
+                adjacencies.put(v2, list2);
+            }
+            list2.add(new adjacentStation(v1, weight));
+        }
+        return new adjacentStations(adjacencies);
+    }
+
     /**
      * Compute the list of reachable destinations and their minimum costs.
      * @param edgeList The list of edges making up the graph G; each is of type
@@ -70,7 +259,33 @@ public class Problems {
     public static <S, U> List<Entry<Integer, Integer>> routeManagement(List<Edge<S, U>> edgeList,
                                                           Vertex<S> origin, int threshold) {
         ArrayList<Entry<Integer, Integer>> answers = new ArrayList<>();
-        return answers;
+        adjacentStations stations = getAdjacentStations(edgeList);
+        ArrayList<Vertex> explorationList = new ArrayList<>();
+        Vertex nodeToAdd = origin;
+        ArrayList<Edge<S, U>> MSTedges = new ArrayList<>();
+
+        while (nodeToAdd != null) {
+            Edge edgeToAdd = null;
+            explorationList.add(nodeToAdd);
+            nodeToAdd = null;
+            int bestDistance = Integer.MAX_VALUE;
+            for (Vertex node : explorationList)
+                for (adjacentStation adjacent : stations.adjacencies.get(node)) {
+                    if (adjacent.distance < bestDistance) {
+                        bestDistance =  adjacent.distance;
+                        edgeToAdd = new Edge(node, adjacent.station, adjacent.distance);
+                    }
+                }
+            MSTedges.add(edgeToAdd);
+        }
+
+        stations = getAdjacentStations(MSTedges);
+        adjacencyResult adjacencyResults = getAdjacencyResult(MSTedges);
+        UnorderedMap<Vertex, ArrayList<Vertex>> adjacencies = adjacencyResults.adjacencies;
+        ArrayList<adjacentStation> stationStack = new ArrayList<>();
+        currentStation =
+        while (stat != null) {}
+        }
     }
 
     /**
